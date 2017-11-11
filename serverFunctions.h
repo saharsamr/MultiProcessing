@@ -8,6 +8,6 @@
 #define MAX_TRANSFER_BYTES 1024
 
 void handleRequests(int*, fd_set*, std::string&);
-void findResults(std::string&, std::string&);
+std::string findResults(std::string&, std::string&);
 
 #endif
