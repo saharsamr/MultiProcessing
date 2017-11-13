@@ -25,6 +25,8 @@ int main(int argc, char const *argv[]) {
       char response[MAX_TRANSFER_SIZE];
       if(recv(sockFd, response, MAX_TRANSFER_SIZE, 0) < 0)
         cout << "data didn't recieve from server.\n";
+      else
+        cout << "Car fine: " << response << endl;
     }
   }
   return 0;

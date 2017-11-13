@@ -9,7 +9,7 @@
 
 void handleRequests(int*, fd_set*, std::string&);
 int searchInTextFile(char*, std::string&);
-void prepareDriverFine(char*, int, std::string&);
+std::string prepareDriverFine(char*, int, std::string&);
 std::string findResults(std::string&, char*, std::string&);
 
 #endif

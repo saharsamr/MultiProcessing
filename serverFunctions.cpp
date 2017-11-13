@@ -28,6 +28,7 @@ using namespace std;
 
 void handleRequests(int* client_sockets, fd_set* readfds, string& dirPath){
   char buffer[MAX_TRANSFER_BYTES], response[MAX_TRANSFER_BYTES];
+  string answer;
   int i, valread;
   for (i = 0; i < MAX_CLIENTS; i++){
     int sd = client_sockets[i];
@@ -37,19 +38,21 @@ void handleRequests(int* client_sockets, fd_set* readfds, string& dirPath){
         close(sd);
         client_sockets[i] = 0;
       }
-      else
-        prepareDriverFine(buffer, valread, dirPath);
+      else{
+        answer = prepareDriverFine(buffer, valread, dirPath);
+        write(sd, answer.c_str(), answer.size());
+      }
     }
   }
 }
 
-void prepareDriverFine(char* buffer, int valread, string& dirPath){
+string prepareDriverFine(char* buffer, int valread, string& dirPath){
   buffer[valread] = '\0';
   cout << buffer << "\n";
   int file_desc[2];
   if(pipe(file_desc) < 0){
     cout << "pipe error.\n";
-    return;
+    return "";
   }
   int pid = fork();
   if(pid == 0){
@@ -67,6 +70,7 @@ void prepareDriverFine(char* buffer, int valread, string& dirPath){
     read(file_desc[0], result, 1024);
     close(file_desc[0]);
     cout << result << "\n";
+    return result;
   }
 }
 
