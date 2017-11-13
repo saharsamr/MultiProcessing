@@ -23,10 +23,12 @@
 #include <string>
 #include <cstring>
 #include <fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 using namespace std;
 
-void handleRequests(int* client_sockets, fd_set* readfds, string& dirPath){
+void handleRequests(int* client_sockets, fd_set* readfds, string& dirPath, int& fd_fifo){
   char buffer[MAX_TRANSFER_BYTES], response[MAX_TRANSFER_BYTES];
   string answer;
   int i, valread;
@@ -40,7 +42,12 @@ void handleRequests(int* client_sockets, fd_set* readfds, string& dirPath){
       }
       else{
         answer = prepareDriverFine(buffer, valread, dirPath);
-        write(sd, answer.c_str(), answer.size());
+        char temp[20];
+        memset(temp, '\0', 20);
+        strcpy(temp, answer.c_str());
+        // write(fd_fifo, answer.c_str(), answer.size());
+        sock_fd_write(sd, temp, answer.size(), fd_fifo);
+        // close(fd_fifo);
       }
     }
   }
@@ -129,4 +136,99 @@ int searchInTextFile(char* driverId, string& path){
       sum += atoi(fineValue.c_str());
 
   return sum;
+}
+
+ssize_t
+sock_fd_write(int sock,void *buf, ssize_t buflen, int fd)
+{
+    ssize_t     size;
+    struct msghdr   msg;
+    struct iovec    iov;
+    union {
+        struct cmsghdr  cmsghdr;
+        char        control[CMSG_SPACE(sizeof (int))];
+    } cmsgu;
+    struct cmsghdr  *cmsg;
+
+    iov.iov_base = buf;
+    iov.iov_len = buflen;
+
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+
+    if (fd != -1) {
+        msg.msg_control = cmsgu.control;
+        msg.msg_controllen = sizeof(cmsgu.control);
+
+        cmsg = CMSG_FIRSTHDR(&msg);
+        cmsg->cmsg_len = CMSG_LEN(sizeof (int));
+        cmsg->cmsg_level = SOL_SOCKET;
+        cmsg->cmsg_type = SCM_RIGHTS;
+
+        printf ("passing fd %d\n", fd);
+        *((int *) CMSG_DATA(cmsg)) = fd;
+    } else {
+        msg.msg_control = NULL;
+        msg.msg_controllen = 0;
+        // printf ("not passing fd\n");
+    }
+
+    size = sendmsg(sock, &msg, 0);
+
+    if (size < 0)
+        perror ("sendmsg");
+    return size;
+}
+
+ssize_t sock_fd_read(int sock, int *fd)
+{
+    char buf[16];
+    ssize_t bufsize = sizeof buf;
+    ssize_t     size;
+
+    if (fd) {
+        struct msghdr   msg;
+        struct iovec    iov;
+        union {
+            struct cmsghdr  cmsghdr;
+            char        control[CMSG_SPACE(sizeof (int))];
+        } cmsgu;
+        struct cmsghdr  *cmsg;
+
+        iov.iov_base = buf;
+        iov.iov_len = bufsize;
+
+        msg.msg_name = NULL;
+        msg.msg_namelen = 0;
+        msg.msg_iov = &iov;
+        msg.msg_iovlen = 1;
+        msg.msg_control = cmsgu.control;
+        msg.msg_controllen = sizeof(cmsgu.control);
+        size = recvmsg (sock, &msg, 0);
+        if (size < 0) {
+            cout<<"recv failed"<<endl;
+            exit(1);
+        }
+        cmsg = CMSG_FIRSTHDR(&msg);
+        if (cmsg && cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
+            if (cmsg->cmsg_level != SOL_SOCKET) {
+                exit(1);
+            }
+            if (cmsg->cmsg_type != SCM_RIGHTS) {
+                exit(1);
+            }
+
+            *fd = *((int *) CMSG_DATA(cmsg));
+        } else
+            *fd = -1;
+    } else {
+        size = read (sock, buf, bufsize);
+        if (size < 0) {
+            cout<<"read failed"<<endl;
+            exit(1);
+        }
+    }
+    return size;
 }
