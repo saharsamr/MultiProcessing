@@ -8,6 +8,8 @@
 #define MAX_TRANSFER_BYTES 1024
 
 void handleRequests(int*, fd_set*, std::string&);
-std::string findResults(std::string&, std::string&);
+int searchInTextFile(char*, std::string&);
+void prepareDriverFine(char*, int, std::string&);
+std::string findResults(std::string&, char*, std::string&);
 
 #endif
