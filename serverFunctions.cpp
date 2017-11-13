@@ -45,9 +45,7 @@ void handleRequests(int* client_sockets, fd_set* readfds, string& dirPath, int& 
         char temp[20];
         memset(temp, '\0', 20);
         strcpy(temp, answer.c_str());
-        // write(fd_fifo, answer.c_str(), answer.size());
         sock_fd_write(sd, temp, answer.size(), fd_fifo);
-        // close(fd_fifo);
       }
     }
   }
@@ -55,7 +53,7 @@ void handleRequests(int* client_sockets, fd_set* readfds, string& dirPath, int& 
 
 string prepareDriverFine(char* buffer, int valread, string& dirPath){
   buffer[valread] = '\0';
-  cout << buffer << "\n";
+  cout << "Car ID: " << buffer << "\n";
   int file_desc[2];
   if(pipe(file_desc) < 0){
     cout << "pipe error.\n";
@@ -76,7 +74,7 @@ string prepareDriverFine(char* buffer, int valread, string& dirPath){
     close(file_desc[1]);
     read(file_desc[0], result, 1024);
     close(file_desc[0]);
-    cout << result << "\n";
+    cout << "Extracted fine: " << result << "\n";
     return result;
   }
 }

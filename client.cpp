@@ -42,9 +42,7 @@ int main(int argc, char const *argv[]) {
   return 0;
 }
 
-ssize_t
-sock_fd_read(int sock, void *buf, ssize_t bufsize, int *fd)
-{
+ssize_t sock_fd_read(int sock, void *buf, ssize_t bufsize, int *fd){
     ssize_t     size;
 
     if (fd) {
